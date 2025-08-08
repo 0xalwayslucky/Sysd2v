@@ -531,15 +531,22 @@ class SystemdServiceConverter:
             kill_signal = self.get_config_option("Service", "KillSignal")
             
             if self.get_config_option("Service", "PIDFile"):
+                print(f"\tif [ -f $PIDFILE ]; then")
                 if kill_signal:
-                    print(f"\tkillproc -p $PIDFILE -s {kill_signal} {exec_path}")
+                    print(f"\t\tkillproc -p $PIDFILE -s {kill_signal} {exec_path}")
                 else:
-                    print(f"\tkillproc -p $PIDFILE {exec_path}")
+                    print(f"\t\tkillproc -p $PIDFILE {exec_path}")
+                print(f"\telse")
+                if kill_signal:
+                    print(f"\t\tstart-stop-daemon --stop --signal {kill_signal} --name $(basename {exec_path}) --oknodo")
+                else:
+                    print(f"\t\tstart-stop-daemon --stop --name $(basename {exec_path}) --oknodo")
+                print(f"\tfi")
             else:
                 if kill_signal:
-                    print(f"\tkillproc -s {kill_signal} {exec_path}")
+                    print(f"\tstart-stop-daemon --stop --signal {kill_signal} --name $(basename {exec_path}) --oknodo")
                 else:
-                    print(f"\tkillproc {exec_path}")
+                    print(f"\tstart-stop-daemon --stop --name $(basename {exec_path}) --oknodo")
             
             self._add_timeout_check("stop")
         
