@@ -477,17 +477,24 @@ class SystemdServiceConverter:
                 exec_path = self.get_executable_path()
                 full_cmd = self.get_full_command()
                 
+                # For Type=simple, we need to handle PID file creation carefully
+                pidfile_specified = self.get_config_option("Service", "PIDFile")
+                
                 # Check if command has arguments
                 if full_cmd != exec_path:
                     # Has arguments - use --startas
                     args = full_cmd[len(exec_path):].strip()
-                    if self.get_config_option("Service", "PIDFile"):
+                    if pidfile_specified:
+                        # Try without --make-pidfile first (assume process creates it)
+                        # Fall back to --make-pidfile in stop function if PID file doesn't exist
                         print(f"\tstart-stop-daemon --start --background --pidfile $PIDFILE --startas {exec_path} -- {args}")
                     else:
                         print(f"\tstart-stop-daemon --start --background --make-pidfile --pidfile $PIDFILE --startas {exec_path} -- {args}")
                 else:
                     # No arguments - use --exec
-                    if self.get_config_option("Service", "PIDFile"):
+                    if pidfile_specified:
+                        # Try without --make-pidfile first (assume process creates it)
+                        # Fall back to --make-pidfile in stop function if PID file doesn't exist
                         print(f"\tstart-stop-daemon --start --background --pidfile $PIDFILE --exec {exec_path}")
                     else:
                         print(f"\tstart-stop-daemon --start --background --make-pidfile --pidfile $PIDFILE --exec {exec_path}")
